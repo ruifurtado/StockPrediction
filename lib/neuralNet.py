@@ -37,13 +37,15 @@ def neural_net(neurons1, neurons2, X_train, X_test, y_train, y_test, mode=0):
                                 , batch_size=config['NEURAL_NET'].getint('batch_size') 
                                 , verbose=1, callbacks=[early_stop,checkpoint])
     model.load_weights(filepath)
-    pred_classes = model.predict_classes(X_test).flatten().tolist()
-    evaluation = model.evaluate(X_test, y_test)
-    val_eval = model.evaluate(X_val, y_val)
-    print("Validation evaluation: "+str(val_eval))
+    pred_classes_test = model.predict_classes(X_test).flatten().tolist()
+    pred_classes_val = model.predict_classes(X_val).flatten().tolist()
+    eval_test = model.evaluate(X_test, y_test)
+    eval_val = model.evaluate(X_val, y_val)
+    print("\nValidation evaluation: "+str(eval_val))
+    print("\nTest evaluation"+str(eval_test))
     clean_session()
     K.clear_session()
-    return pred_classes, evaluation, val_eval, model_history
+    return pred_classes_test, pred_classes_val, eval_test, eval_val, model_history
 
 def clean_session(): 
     if keras.backend.tensorflow_backend._SESSION:

@@ -18,17 +18,20 @@ class GA(object):
     data=[]
     special_ti = []
     normal_ti = []
-    predic_classes=[]
+    pred_classes_test=[]
+    pred_classes_val=[]
     last_accuracy=0
-    evalu=0
+    best_eval = 0
     model_history=0
     config=0
     best_y_test=[]
     evaluation_val = []
     evaluation_test = []
     fitness_func = ""
+    roi = 0
     last_roi=-100 # Pedraria gigante so para passar a primeira iteracao e a comparacao com zero qdo for ROI
                   # negativo passar
+        
     
     def __init__(self, data, normal_ti, special_ti):
         self.data=data
@@ -78,48 +81,44 @@ class GA(object):
         fitnesses = toolbox.map(toolbox.evaluate, pop)
         counter=1
         for ind, fit in zip(pop, fitnesses):
-            self.file.write("individual number: "+str(counter)+"\n")
+            self.file.write("\nIndividual number: "+str(counter))
             self.file.write("\n"+str(ind)+"\n")
-            print("Calculating fitness for element number: "+str(counter))
+            print("\nIndividual number: "+str(counter))
             ind.fitness.values = fit
-            #print("Fitness: "+str(fit))
-            print("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+'\n')
-            self.file.write("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+'\n')
+            print("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+" | "+ "ROI: "+str(self.roi)+'\n')
+            self.file.write("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+" | "+ "ROI: "+str(self.roi)+'\n')
             counter=counter+1
         for g in range(ngen):
             print ("\n"+"Generation: "+str(g))
             self.file.write("\ngeneration: "+str(g)+"\n")
-            print("pop: "+str(len(pop)))
+            print("population length: "+str(len(pop)))
             pop = toolbox.select(pop, k=len(pop))
-            print(pop)
             pop = algorithms.varAnd(pop, toolbox, cxpb, mutpb)
             invalids = [ind for ind in pop if not ind.fitness.valid]
             fitnesses = toolbox.map(toolbox.evaluate, invalids)
             count = 0
             for ind, fit in zip(invalids, fitnesses):
                 count = count+1
-                print("Individual number: "+str(count))
+                print("\nIndividual number: "+str(count)+" | "+"Generation: "+str(g))
                 ind.fitness.values = fit
-                self.file.write("Individual number: "+str(count)+"\n")
+                self.file.write("\nIndividual number: "+str(count)+" | "+"Generation: "+str(g)+"\n")
+                self.file.write("\n"+str(ind)+"\n")
                 self.file.write("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+'\n')
-                print("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+'\n')
-        print("\n+++++++++++++++++++++++++++++++Best chromosome++++++++++++++++++++++++++++++++\n ")
+                print("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+" | "+ "ROI: "+str(self.roi)+'\n')
+        print("\n+++++++++++++++++++++++++++++++ BEST CHROMOSOME ++++++++++++++++++++++++++++++++\n ")
         self.file.write("\n"+"Best element"+"\n")
         best_run = tools.selBest(pop, k=1)[0]
         self.file.write(str(best_run)+"\n")
         self.file.write(self.fitness_func+" of best element before last run: "+str(best_run.fitness.values[0])+"\n")
-        print("Fitensess: "+str(best_run.fitness.values[0]))
-        print("Loss: "+str(self.evalu[0]))
-        print("Accuracy: "+str(self.evalu[1])+"\n")
-        self.confusionMatrix(self.best_y_test, self.predic_classes)
-        if self.fitness_func == "roi":
-            print("ROI: {}".format(self.last_roi))
-            self.file.write("ROI: {}".format(self.last_roi))
-        #pred_classes, evaluation, model_history = self.process(best_run, data, normal_ti, special_ti, mode=1)
-        #self.file.write("Last run! ")
-        self.file.write("Accuracy: "+str(self.evalu[1]))
-        self.file.write("Pred classes: "+str(self.predic_classes))
-        return self.predic_classes
+        print("Fitness value: "+str(best_run.fitness.values[0]))
+        print("Optimization "+self.config["GA"]["optimization_set"]+" loss: "+str(self.best_eval[0]))
+        print("Optimization "+self.config["GA"]["optimization_set"]+" accuracy: "+str(self.best_eval[1])+"\n")
+        print("Optimization "+self.config["GA"]["optimization_set"]+ " ROI: "+str(self.last_roi)+"\n")
+        self.confusionMatrix(self.best_y_test, self.pred_classes_test)
+        self.file.write("Optimization "+self.config["GA"]["optimization_set"]+ " ROI: "+str(self.last_roi)+"\n")
+        self.file.write("Optimization "+self.config["GA"]["optimization_set"]+" accuracy: "+str(self.best_eval[1])+"\n")
+        self.file.write("Pred classes:\n"+str(self.pred_classes_test))
+        return self.pred_classes_test
     
     def process(self, indices, data, normal_ti, special_ti, mode):
         process_data=data.copy()
@@ -146,32 +145,37 @@ class GA(object):
         print("")
         print("-------------------------------------------------------------------------")
         print("")
-        pred_classes, evaluation, self.evaluation_val, model_history = nn.neural_net(net_ind[0], net_ind[1], X_train, X_test, y_train, y_test)
-        self.evaluation_test = evaluation
-        print("\n-----------------------------SCORE---------------------------------------")
+        pred_test, pred_val, self.evaluation_test, self.evaluation_val, model_history = nn.neural_net(net_ind[0], net_ind[1], X_train, X_test, y_train, y_test)
+        print("\n-----------------------------NEURAL NET SCORE---------------------------------------")
         print("")
         print("Validation accuracy; "+str(self.evaluation_val[1]))
-        print("Test accuracy: "+str(evaluation[1]))
-        print("\n-------------------------------------------------------------------------")
+        print("Test accuracy: "+str(self.evaluation_test[1]))
+        optimization_set = self.config["GA"]['optimization_set']
+        print("\n-----------------------------OPTIMIZATION PROCESS---------------------------------------")
+        print("\nOptimization will be performed on the {} set".format(optimization_set))
+        if optimization_set=="val":
+            evaluation = self.evaluation_val
+            roi = im.tradeStrategy(pred_val, mode=2)
+        elif optimization_set=="test":
+            evaluation = self.evaluation_test
+            roi = im.tradeStrategy(pred_test, mode=2)        
         if self.fitness_func == "accuracy":
-            if evaluation[1] > self.last_accuracy:
-                print("Accuracy improved! Saving prediction, best element till now.")
-                self.predic_classes=pred_classes
-                self.last_accuracy=evaluation[1]
-                self.evalu=evaluation
-                self.best_y_test = y_test
-            return evaluation[1]
+            last_metric = self.last_accuracy
+            metric = evaluation[1]
         elif self.fitness_func == "roi":
-            roi = im.tradeStrategy(pred_classes, mode=2)
-            if roi > self.last_roi:
-                print("ROI improved! Saving prediction, best element till now.")
-                self.last_roi = roi
-                self.predic_classes=pred_classes
-                self.last_accuracy=evaluation[1]
-                self.evalu=evaluation
-                self.best_y_test = y_test
-            return roi
-    
+            last_metric = self.last_roi
+            metric = roi 
+        self.roi = roi
+        if metric > last_metric:
+            print("\nAccuracy improved! Saving prediction, best element till now.")
+            self.last_roi = roi
+            self.pred_classes_test=pred_test
+            self.pred_classes_val=pred_val
+            self.last_accuracy=evaluation[1]
+            self.best_eval=evaluation
+            self.best_y_test = y_test
+        return metric
+
     def customCrossover(self, ind1, ind2):
         split = int(len(ind1)/2)
         half_ind1_values = ind1[:split]
@@ -198,9 +202,9 @@ class GA(object):
         print(cm)
         self.file.write("Confusion matrix metrics+\n")
         self.file.write(str(cm)+'\n')
-        print("Accuracy: "+str((cm[0][0]+cm[1][1])/(cm[0][0]+cm[0][1]+cm[1][0]+cm[1][1]))+'\n')
-        print("Precision: "+str(cm[0][0]/(cm[0][0]+cm[0][1]))+'\n')
-        print("Recall: "+str(cm[0][0]/(cm[0][0]+cm[1][0]))+'\n')
-        self.file.write("Accuracy: "+str((cm[0][0]+cm[1][1])/(cm[0][0]+cm[0][1]+cm[1][0]+cm[1][1]))+'\n')
-        self.file.write("Precision: "+str(cm[0][0]/(cm[0][0]+cm[0][1]))+'\n')
-        self.file.write("Recall: "+str(cm[0][0]/(cm[0][0]+cm[1][0]))+'\n')
+        print("Test Accuracy: "+str((cm[0][0]+cm[1][1])/(cm[0][0]+cm[0][1]+cm[1][0]+cm[1][1]))+'\n')
+        print("Test Precision: "+str(cm[0][0]/(cm[0][0]+cm[0][1]))+'\n')
+        print("Test Recall: "+str(cm[0][0]/(cm[0][0]+cm[1][0]))+'\n')
+        self.file.write("Test Accuracy: "+str((cm[0][0]+cm[1][1])/(cm[0][0]+cm[0][1]+cm[1][0]+cm[1][1]))+'\n')
+        self.file.write("Test Precision: "+str(cm[0][0]/(cm[0][0]+cm[0][1]))+'\n')
+        self.file.write("Test Recall: "+str(cm[0][0]/(cm[0][0]+cm[1][0]))+'\n')

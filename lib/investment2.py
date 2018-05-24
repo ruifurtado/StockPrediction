@@ -24,9 +24,9 @@ def create_cash(portfolio):
     capital = initial_capital
     for idx, signal_order in enumerate(zip(portfolio['signal'],portfolio['positions_value'])):
         if idx==len(portfolio)-1:
-            if portfolio['positions'].iloc[-1] < 0:
+            if portfolio['positions'].iloc[-2] < 0:
                 capital = capital-(signal_order[1]+(signal_order[1]*transaction_cost))
-            if portfolio['positions'].iloc[-1] > 0:
+            if portfolio['positions'].iloc[-2] > 0:
                 capital = capital+(signal_order[1]-(signal_order[1]*transaction_cost))
             cash.append(capital)
             total.append(capital)
@@ -66,18 +66,18 @@ def create_cash(portfolio):
 
 def plotter(portfolio):
     portfolio[['signal','close','cash','positions_value','total']].plot(subplots=True, figsize=(6, 6)
-    , title=['signal','close','cash','positions_value','total'])
+    , grid=True)
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111, ylabel='Portfolio value in $')
     # Plot the equity curve in dollars
-    portfolio['total'].plot(ax=ax1, lw=2.)
-    ax1.plot(portfolio.loc[portfolio['signal'] == 1].index, portfolio['total'][portfolio['signal']  == 1],'^', markersize=10 )
-    ax1.plot(portfolio.loc[portfolio['signal'] == -1].index, portfolio['total'][portfolio['signal'] == -1],'v', markersize=10 )
+    portfolio['total'].plot(ax=ax1, lw=2., grid=True)
+    ax1.plot(portfolio.loc[portfolio['signal'] == 1].index, portfolio['total'][portfolio['signal']  == 1],'^', markersize=10)
+    ax1.plot(portfolio.loc[portfolio['signal'] == -1].index, portfolio['total'][portfolio['signal'] == -1],'v', markersize=10)
     ax1.legend(['Portfolio value','Long','Short'])
     
     fig2 = plt.figure()
     ax_1 = fig2.add_subplot(111, ylabel='close entries')
-    portfolio['close'].plot(ax=ax_1, lw=2.)
+    portfolio['close'].plot(ax=ax_1, lw=2., grid=True)
     ax_1.plot(portfolio.loc[portfolio['signal'] == 1].index, portfolio['close'][portfolio['signal']  == 1],'^', markersize=10 )
     ax_1.plot(portfolio.loc[portfolio['signal'] == -1].index, portfolio['close'][portfolio['signal'] == -1],'v', markersize=10 )
     ax_1.legend(['Market index','Long','Short'])
@@ -115,14 +115,25 @@ def tradeStrategy(prediction, mode=1):
     portfolio = create_cash(portfolio)
     # Add `returns` to portfolio
     portfolio['returns'] = portfolio['total'].pct_change()
+    roi = ((portfolio['total'].iloc[-1]-initial_capital)/initial_capital)*100
     if mode == 1:
         print("\n"+"------------------Portfolio Stats-------------------"+"\n")
-    roi = ((portfolio['total'].iloc[-1]-initial_capital)/initial_capital)*100
-    print("ROI: "+str(roi)+"%")
+        ntransactions = [i for i in portfolio['signal'] if i!=0]
+        short = sum(1 for i in portfolio['signal'] if i==-1)
+        Long = sum(1 for i in portfolio['signal'] if i==1)
+        hold = sum(1 for i in portfolio['signal'] if i==0)
+        print("HIGHEST TOTAL VALUE: "+str(portfolio['total'].max()))
+        print("LOWEST TOTAL VALUE: "+str(portfolio['total'].min()))
+        print("NUMBER OF TRANSACTIONS: "+str(len(ntransactions)))
+        print("ROI: "+str(roi)+"%")
+        print("NUMBER OF LONG TRANS: "+str(Long))
+        print("NUMBER OF SHORT TRANS: "+str(short))
+        print("NUMBER OF POSITON HOLDS: "+str(hold))
     if mode!=1:
-        print("ROI used as fitness function!")
+        print("\nROI used as fitness function!")
+        print("ROI: "+str(roi)+"%")
         return roi 
     portfolio.to_csv("datasets/final_portfolio2.csv", index=False)
-    print("Created investment portfolio!")
+    print("\nCreated investment portfolio!")
     plotter(portfolio)
     
