@@ -135,5 +135,5 @@ def tradeStrategy(prediction, mode=1):
         return roi 
     portfolio.to_csv("datasets/final_portfolio2.csv", index=False)
     print("\nCreated investment portfolio!")
-    plotter(portfolio)
+    #plotter(portfolio)
     

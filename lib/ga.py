@@ -103,7 +103,7 @@ class GA(object):
                 ind.fitness.values = fit
                 self.file.write("\nIndividual number: "+str(count)+" | "+"Generation: "+str(g)+"\n")
                 self.file.write("\n"+str(ind)+"\n")
-                self.file.write("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+'\n')
+                self.file.write("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+"ROI: "+str(self.roi)+'\n')
                 print("Fitness value: "+str(fit)+" | "+ "Validation Acc: "+str(self.evaluation_val[1])+" | "+ "Test Acc: "+str(self.evaluation_test[1])+" | "+ "ROI: "+str(self.roi)+'\n')
         print("\n+++++++++++++++++++++++++++++++ BEST CHROMOSOME ++++++++++++++++++++++++++++++++\n ")
         self.file.write("\n"+"Best element"+"\n")
