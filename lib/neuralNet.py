@@ -24,7 +24,7 @@ def neural_net(neurons1, neurons2, X_train, X_test, y_train, y_test, mode=0):
     
     model = Sequential()
     model.add(Dense(neurons1, input_dim=X_train.shape[1], activation=config['NEURAL_NET']['activation']))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     model.add(Dense(neurons2, activation=config['NEURAL_NET']['activation']))
     model.add(Dense(1, activation='sigmoid'))
     filepath="BESTMODEL.hdf5"
